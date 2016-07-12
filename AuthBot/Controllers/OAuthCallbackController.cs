@@ -13,8 +13,11 @@ namespace AuthBot.Controllers
     using Microsoft.Bot.Connector;
     using Models;
     using System.Configuration;
+    using System.Security.Cryptography;
+    using System.Diagnostics;
     public class OAuthCallbackController : ApiController
     {
+        private const string err = "No pending message as a result the login flow cannot be resumed";
 
         [HttpGet]
         [Route("api/OAuthCallback")]
@@ -30,8 +33,9 @@ namespace AuthBot.Controllers
             }
             catch (Exception ex)
             {
+                Trace.TraceError(err + ": " + ex.Message);
                 // Callback is called with no pending message as a result the login flow cannot be resumed.
-                return Request.CreateErrorResponse(HttpStatusCode.BadRequest, ex);
+                return Request.CreateErrorResponse(HttpStatusCode.BadRequest, err);
             }
 
         }
@@ -103,15 +107,22 @@ namespace AuthBot.Controllers
             }
             catch (Exception ex)
             {
+                Trace.TraceError(err + ": " + ex.Message);
                 // Callback is called with no pending message as a result the login flow cannot be resumed.
-                return Request.CreateErrorResponse(HttpStatusCode.BadRequest, ex);
+                return Request.CreateErrorResponse(HttpStatusCode.BadRequest, err);
             }
         }
 
         private int GenerateRandomNumber()
         {
-            Random rnd = new Random();
-            return rnd.Next(10000, 100000);
+            using (RNGCryptoServiceProvider rng = new RNGCryptoServiceProvider())
+            {
+                byte[] buffer = new byte[4];
+
+                rng.GetBytes(buffer);
+                return BitConverter.ToInt32(buffer, 0);
+                
+            }
         }
     }
 }
